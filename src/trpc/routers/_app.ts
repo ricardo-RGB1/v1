@@ -11,19 +11,19 @@ export const appRouter = createTRPCRouter({
   invokeInngest: baseProcedure
     .input(
       z.object({
-        text: z.string(),
+        value: z.string(),
       })
     )
     .mutation(async ({ input }) => {
-      await inngest.send({
-        // <-- send the event to the Inngest function
+      await inngest.send({// <-- send the event to the Inngest function
         name: "test/hello.world",
-        data: {
-          // <-- data that will be sent to the Inngest function
-          email: input.text, 
+        data: { // <-- data that will be sent to the Inngest function
+          value: input.value, 
         },
       });
     }),
+
+  // query procedure that returns a greeting message based on the input text
   createAI: baseProcedure
     .input(
       z.object({
