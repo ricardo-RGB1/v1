@@ -1,18 +1,23 @@
 "use client";
+
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useTRPC } from "@/trpc/client";
 import { useMutation } from "@tanstack/react-query";
-
+import { useState } from "react";
 const Page = () => {
+  const [value, setValue] = useState("");
   const trpc = useTRPC();
-  // useMutation is a hook that allows you to mutate data on the server - here it is used to invoke the invokeInngest procedure 
-  const invokeInngest = useMutation(trpc.invokeInngest.mutationOptions({})); 
+  // useMutation is a hook that allows you to mutate data on the server - here it is used to invoke the invokeInngest procedure
+  const invokeInngest = useMutation(trpc.invokeInngest.mutationOptions({}));
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
+      <Input value={value} onChange={(e) => setValue(e.target.value)} />
       <Button
-        onClick={() => 
-          invokeInngest.mutate({ text: "background job triggered" })
+        disabled={invokeInngest.isPending}
+        onClick={() =>
+          invokeInngest.mutate({ value: value })
         }
       >
         Invoke background jobs
