@@ -179,6 +179,8 @@ export const codeAgentFunction = inngest.createFunction(
     });
 
     const result = await network.run(event.data.value);
+
+
     // Handle cases where the agent didn't complete successfully
     const isError =
       !result.state.data.summary ||
@@ -210,11 +212,12 @@ export const codeAgentFunction = inngest.createFunction(
      *
      * This preserves the complete state of the agent's work for retrieval
      * and display in the frontend interface.
-     */
+    */
     await step.run("save-result", async () => {
       if (isError) {
         return await prisma.message.create({
           data: {
+            projectId: event.data.projectId, 
             content:
               "The agent was unable to complete the task within the maximum iterations.",
             role: "ASSISTANT",
@@ -224,6 +227,7 @@ export const codeAgentFunction = inngest.createFunction(
       }
       return await prisma.message.create({
         data: {
+          projectId: event.data.projectId,
           content: result.state.data.summary,
           role: "ASSISTANT",
           type: "RESULT",
