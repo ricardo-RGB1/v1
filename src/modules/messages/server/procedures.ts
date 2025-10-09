@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { inngest } from "@/inngest/client";
 import { z } from "zod";
 
+
+// Each message will be associated with an individual project 
 export const messagesRouter = createTRPCRouter({
-  // Return all the messages from the AI
   getMany: baseProcedure.query(async () => { 
     const messages = await prisma.message.findMany({
       orderBy: {
@@ -17,14 +18,16 @@ export const messagesRouter = createTRPCRouter({
   create: baseProcedure
     .input(
       z.object({
-        value: z.string().min(1, { message: "Message is required" }),
+        value: z.string().min(1, { message: "Message is required" })
+        .max(10000, { message: "Prompt is too long" }),
+        projectId: z.string().min(1, { message: "Project ID is required" }),
       })
     )
     .mutation(async ({ input }) => {
-      const newMessage = await prisma.message.create({
+      const newMessage = await prisma.message.create({ // create a new message with the input value
         data: {
-          // <-- create a new message with the input value
-          content: input.value,
+          projectId: input.projectId,
+          content: input.value, 
           role: "USER",
           type: "RESULT",
         },
@@ -34,6 +37,7 @@ export const messagesRouter = createTRPCRouter({
         name: "code-agent/run",
         data: {
           value: input.value, // send the input value to the inngest
+          projectId: input.projectId, 
         },
       });
 
