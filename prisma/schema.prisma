@@ -45,7 +45,7 @@ model Message {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  fragment Fragment? 
+  fragment Fragment?
 
   projectId String?
   project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -54,7 +54,7 @@ model Message {
 // The AI Agent's result
 model Fragment {
   id        String   @id @default(uuid())
-  messageId String   @unique 
+  messageId String   @unique  
   message   Message  @relation(fields: [messageId], references: [id]) // one to one relation with Message
 
   sandboxUrl String 

@@ -3,8 +3,28 @@ import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 import { prisma } from "@/lib/prisma";
 import { inngest } from "@/inngest/client";
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 
 export const projectsRouter = createTRPCRouter({
+  getOne: baseProcedure
+  .input(
+    z.object({
+      id: z.string().min(1, { message: "Project ID is required" }),
+    })
+  )
+  .query(async ({ input }) => {
+    const existingProject = await prisma.project.findUnique({
+      where: {
+        id: input.id,
+      },
+    });
+
+    if (!existingProject) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+    }
+
+    return existingProject;
+  }),
   // Return all the messages from the AI
   getMany: baseProcedure.query(async () => {
     const projects = await prisma.project.findMany({
@@ -30,7 +50,7 @@ export const projectsRouter = createTRPCRouter({
         data: {
           name: generateSlug(2, { format: "kebab" }),
           messages: {
-        create: {
+            create: {
               content: input.value,
               role: "USER",
               type: "RESULT",
