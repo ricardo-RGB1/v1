@@ -4,16 +4,28 @@ import { inngest } from "@/inngest/client";
 import { z } from "zod";
 
 
-// Each message will be associated with an individual project 
-export const messagesRouter = createTRPCRouter({
-  getMany: baseProcedure.query(async () => { 
+// each message will be associated with an individual project 
+export const messagesRouter = createTRPCRouter({ 
+  getMany: baseProcedure
+  .input(
+    z.object({
+      projectId: z.string().min(1, { message: "Project ID is required" }),
+    })
+  )
+  .query(async ({ input }) => { 
     const messages = await prisma.message.findMany({
+      where: {
+        projectId: input.projectId, // get all the messages for the project 
+      },
+      include: {
+        fragment: true,
+      },
       orderBy: {
         updatedAt: "asc", // order by updatedAt in ascending order
       },
     });
     return messages;
-  }),
+  }), 
 
   create: baseProcedure
     .input(
