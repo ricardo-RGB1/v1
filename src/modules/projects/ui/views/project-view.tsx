@@ -9,6 +9,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { ProjectHeader } from "../components/project-header";
+import { FragmentWeb } from "../components/fragment-web";
 
 interface ProjectViewProps {
   projectId: string;
@@ -23,7 +24,7 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
           defaultSize={30}
           minSize={20}
           className="flex flex-col min-h-0"
-        >
+        >  
           <Suspense fallback={<p>Loading project...</p>}>
             <ProjectHeader projectId={projectId} /> 
           </Suspense>
@@ -41,7 +42,7 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
           minSize={50}
           className="flex flex-col min-h-0"
         >
-          {/* TODO: PREVIEW */}
+         {!!activeFragment && <FragmentWeb data={activeFragment} />}
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>

@@ -26,7 +26,7 @@ export const MessagesContainer = ({
         // TODO: TEMPORARY REFRESH INTERVAL FOR TESTING
         refetchInterval: 5000,
     }
-  ));
+  )); 
 
   // THIS IS CAUSING ISSUES WHEN SCROLLING DOWN AND UP 
 //   useEffect(() => {
