@@ -19,6 +19,7 @@ export const MessagesContainer = ({
 }: Props) => {
   const trpc = useTRPC();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const lastAssistantMessageRef = useRef<string | null>(null); 
   // ********** Fetch all messages for this project **********
   const { data: messages } = useSuspenseQuery(
     trpc.messages.getMany.queryOptions({ projectId },
@@ -28,20 +29,38 @@ export const MessagesContainer = ({
     }
   )); 
 
-  // THIS IS CAUSING ISSUES WHEN SCROLLING DOWN AND UP 
-//   useEffect(() => {
-//     const lastAssistantMessage = messages.findLast(
-//       (message) => message.role === "ASSISTANT" && !!message.fragment
-//     );
 
-//     if (lastAssistantMessage) {
-//       setActiveFragment(lastAssistantMessage.fragment);
-//     }
-//   }, [messages, setActiveFragment]);
+  
+  /**
+   * Auto-select the most recent assistant message's fragment
+   * 
+   * This effect automatically updates the active fragment to display the code/preview
+   * from the most recently generated assistant message. This ensures that when new
+   * assistant responses are received (containing generated code fragments), the UI
+   * automatically switches to show the latest generated content.
+   * 
+   * The effect:
+   * 1. Finds the last message with role "ASSISTANT" from the messages array
+   * 2. Checks if this message has an associated fragment (generated code)
+   * 3. Compares the fragment ID with the previously tracked assistant message
+   * 4. If different, updates the active fragment and tracks the new fragment ID
+   * 
+   * This prevents unnecessary re-renders when the same fragment is already active
+   * and ensures users always see the most recent generated code automatically.
+   */
+  useEffect(() => {
+    // Find the last ASSISTANT message
+    const lastAssistantMessage = messages
+      .findLast(message => message.role === "ASSISTANT");
+      // if the last assistant message is different from the current active fragment, set the active fragment to the last assistant message's fragment
+      if(lastAssistantMessage?.fragment && lastAssistantMessage.fragment.id !== lastAssistantMessageRef.current) {
+        setActiveFragment(lastAssistantMessage.fragment);
+        lastAssistantMessageRef.current = lastAssistantMessage.fragment.id;
+      } 
+  }, [messages, setActiveFragment])
 
-//   useEffect(() => {
-//     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-//   }, [messages.length]);
+
+
 
 
 const lastMessage = messages[messages.length - 1]; // get the last message  
