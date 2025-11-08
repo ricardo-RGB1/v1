@@ -1,5 +1,6 @@
 "use client";
 
+import { useClerk } from "@clerk/nextjs";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -26,6 +27,7 @@ const formSchema = z.object({
 type FormSchema = z.infer<typeof formSchema>;
 
 export const ProjectForm = () => {
+  const clerk = useClerk();
   const router = useRouter();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -46,8 +48,10 @@ export const ProjectForm = () => {
       },
       // TODO: Invalidate usage status
       onError: (error) => {
-        // TODO: Redirect to pricing page if specific error
-        toast.error(error.message);
+        toast.error(error.message); 
+        if(error.data?.code === "UNAUTHORIZED") {
+          clerk.openSignIn();
+        }
       },
     })
   );

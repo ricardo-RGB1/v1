@@ -14,7 +14,7 @@ import { FragmentWeb } from "../components/fragment-web";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EyeIcon, CodeIcon, CrownIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
+import { UserControl } from "@/components/user-control";
 import { FileExplorer } from "@/components/file-explorer";
 
 interface ProjectViewProps {
@@ -74,6 +74,7 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
                     <CrownIcon /> <span>Upgrade</span>
                   </Link>
                 </Button>
+                <UserControl /> 
               </div>
             </div>
             <TabsContent value="preview">
