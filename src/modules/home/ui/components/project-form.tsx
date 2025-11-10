@@ -38,19 +38,23 @@ export const ProjectForm = () => {
     },
   });
 
-  // ********** Create a new project **********
+  // ********** Create a new project, invalidate usage status, and redirect to project **********
   const createProject = useMutation(
     trpc.projects.create.mutationOptions({
       onSuccess: (data) => {
         // invalidate the projects query to get the new project
         queryClient.invalidateQueries(trpc.projects.getMany.queryOptions());
+        // invalidate the usage status query to get the new usage status
+        queryClient.invalidateQueries(trpc.usage.status.queryOptions());
         router.push(`/projects/${data.id}`);
       },
-      // TODO: Invalidate usage status
       onError: (error) => {
         toast.error(error.message); 
         if(error.data?.code === "UNAUTHORIZED") {
           clerk.openSignIn();
+        }
+        if(error.data?.code === "TOO_MANY_REQUESTS") {
+          router.push("/pricing");
         }
       },
     })
