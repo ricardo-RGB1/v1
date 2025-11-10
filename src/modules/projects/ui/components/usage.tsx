@@ -10,6 +10,28 @@ interface Props {
   msBeforeNext: number;
 }
 
+/**
+ * Usage Component
+ * 
+ * Displays the user's current credit usage status and reset time information.
+ * Shows different messaging for free vs pro users and includes an upgrade button
+ * for free users to encourage conversion to pro plans.
+ * 
+ * Features:
+ * - Shows remaining credits with appropriate labeling (free/pro)
+ * - Displays time until credit reset using human-readable duration format
+ * - Conditionally renders upgrade button for non-pro users
+ * - Integrates with Clerk authentication to check user plan status
+ * 
+ * Props:
+ * - credits: number - The number of remaining credits for the user
+ * - msBeforeNext: number - Milliseconds until the next credit reset
+ * 
+ * Usage:
+ * Typically displayed above message forms when users have consumed credits,
+ * providing transparency about their current usage limits and encouraging
+ * upgrades when appropriate.
+ */
 export const Usage = ({ credits, msBeforeNext }: Props) => {
   const { has } = useAuth();
   const hasProAccess = has?.({ plan: "pro" });
