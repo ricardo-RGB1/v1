@@ -15,8 +15,19 @@ import { useUser } from "@clerk/nextjs";
 
 
  
+/**
+ * ProjectList component displays a grid of user's projects.
+ * 
+ * Features:
+ * - Shows authenticated user's projects in a responsive grid layout
+ * - Each project is displayed as a clickable card with project name and last updated time
+ * - Displays a message when no projects exist
+ * - Only renders for authenticated users
+ * 
+ * @returns JSX element containing the project list or null if user is not authenticated
+ */
 export const ProjectList = () => {
-  const {user } = useUser(); 
+  const { user } = useUser(); // get the user from the clerk
   const trpc = useTRPC();
   const { data: projects } = useQuery(trpc.projects.getMany.queryOptions());
 
@@ -25,6 +36,7 @@ export const ProjectList = () => {
 
   return (
     <div className="w-full bg-white dark:bg-sidebar rounded-xl p-8 border flex flex-col gap-y-6 sm:gap-y-4">
+      
       <h2 className="text-2xl font-bold">{user?.fullName}&apos;s Projects</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects?.length === 0 && ( // if no projects, show a message

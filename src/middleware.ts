@@ -7,6 +7,7 @@ const isPublicRoute = createRouteMatcher([
     "/sign-in(.*)",
     "/sign-up(.*)",
     "/api(.*)",
+    "/pricing(.*)",
 ])
 
 // if the route is not public, protect it
