@@ -19,6 +19,22 @@ interface UserMessageProps {
   content: string;
 }
 
+
+
+
+
+
+
+
+/**
+ * UserMessage component displays a user's message in a chat interface.
+ * 
+ * Renders the user's message content in a card positioned on the right side
+ * of the chat container with appropriate styling and responsive layout.
+ * 
+ * @param content - The text content of the user's message
+ * @returns JSX element containing the styled user message card
+ */
 const UserMessage = ({ content }: UserMessageProps) => {
   return (
     <div className="flex justify-end pb-4 pr-2 pl-10">
@@ -35,6 +51,18 @@ interface FragmentCardProps {
   onFragmentClick: (fragment: Fragment) => void;
 }
 
+/**
+ * FragmentCard component displays a clickable card for code fragments.
+ * 
+ * Renders a button-style card that shows fragment information and allows users
+ * to click to view the associated code preview. The card's appearance changes
+ * based on whether it's currently the active fragment being displayed.
+ * 
+ * @param fragment - The fragment object containing title and other metadata
+ * @param isActiveFragment - Boolean indicating if this fragment is currently active/selected
+ * @param onFragmentClick - Callback function triggered when the fragment card is clicked
+ * @returns JSX element containing the interactive fragment card
+ */
 const FragmentCard = ({
   fragment,
   isActiveFragment,
@@ -70,6 +98,22 @@ interface AssistantMessageProps {
   type: MessageType;
 }
 
+/**
+ * AssistantMessage component displays messages from the AI assistant.
+ * 
+ * Renders assistant messages with a distinctive layout including the Joy logo,
+ * timestamp, message content, and optionally a fragment card for code previews.
+ * The component handles different message types including error states with
+ * appropriate styling.
+ * 
+ * @param content - The text content of the assistant's message
+ * @param fragment - Optional fragment object containing generated code
+ * @param createdAt - Timestamp when the message was created
+ * @param isActiveFragment - Boolean indicating if the fragment is currently active
+ * @param onFragmentClick - Callback function for fragment card interactions
+ * @param type - Message type (RESULT, ERROR, etc.) affecting styling and behavior
+ * @returns JSX element containing the complete assistant message layout
+ */
 const AssistantMessage = ({
   content,
   fragment,
@@ -112,6 +156,22 @@ const AssistantMessage = ({
   );
 };
 
+/**
+ * MessageCard component renders different types of chat messages.
+ * 
+ * This is the main component that determines whether to render a user message
+ * or an assistant message based on the message role. It serves as a router
+ * component that delegates to the appropriate specialized message component.
+ * 
+ * @param content - The text content of the message
+ * @param role - The role of the message sender (USER or ASSISTANT)
+ * @param fragment - Optional fragment object for code previews
+ * @param createdAt - Timestamp when the message was created
+ * @param isActiveFragment - Boolean indicating if the fragment is currently active
+ * @param onFragmentClick - Callback function for fragment interactions
+ * @param type - Message type affecting styling and behavior
+ * @returns JSX element containing the appropriate message component
+ */
 export const MessageCard = ({
   content,
   role,

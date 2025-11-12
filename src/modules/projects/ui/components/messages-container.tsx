@@ -12,6 +12,49 @@ interface Props {
   setActiveFragment: (fragment: Fragment | null) => void; // set the active fragment to the fragment passed in
 }
 
+
+
+
+
+
+
+/**
+ * MessagesContainer Component
+ * 
+ * A comprehensive chat interface container that manages the display and interaction
+ * of messages between users and the AI assistant within a project context.
+ * 
+ * Key Features:
+ * - Real-time message fetching with automatic refresh (5s interval for testing)
+ * - Automatic fragment selection for the most recent assistant-generated code
+ * - Scrollable message history with loading states
+ * - Integrated message input form at the bottom
+ * - Fragment management for code preview interactions
+ * 
+ * Message Flow:
+ * 1. User submits message via MessageForm
+ * 2. Messages are fetched and displayed in chronological order
+ * 3. Assistant responses may include code fragments
+ * 4. Most recent fragment is automatically selected for preview
+ * 5. Users can manually select different fragments by clicking fragment cards
+ * 
+ * Auto-Fragment Selection Logic:
+ * - Monitors messages array for new assistant responses
+ * - Automatically sets the active fragment to the most recent one
+ * - Prevents unnecessary re-renders by tracking fragment IDs
+ * - Ensures users always see the latest generated code
+ * 
+ * Props:
+ * - projectId: string - The ID of the project containing the messages
+ * - activeFragment: Fragment | null - Currently selected fragment for preview
+ * - setActiveFragment: Function to update the active fragment selection
+ * 
+ * Dependencies:
+ * - Uses tRPC for real-time message fetching
+ * - Integrates with TanStack Query for data management
+ * - Manages scroll position and loading states
+ * - Coordinates with MessageCard, MessageForm, and MessageLoading components
+ */
 export const MessagesContainer = ({
   projectId,
   activeFragment,
