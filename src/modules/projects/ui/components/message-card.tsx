@@ -19,26 +19,19 @@ interface UserMessageProps {
   content: string;
 }
 
-
-
-
-
-
-
-
 /**
  * UserMessage component displays a user's message in a chat interface.
- * 
+ *
  * Renders the user's message content in a card positioned on the right side
  * of the chat container with appropriate styling and responsive layout.
- * 
+ *
  * @param content - The text content of the user's message
  * @returns JSX element containing the styled user message card
  */
 const UserMessage = ({ content }: UserMessageProps) => {
   return (
     <div className="flex justify-end pb-4 pr-2 pl-10">
-      <Card className="rounded-lg bg-muted p-3 shadow-none border-none max-w-[80%] break-words">
+      <Card className="rounded-lg bg-[#3d3530] p-3 shadow-none border-none max-w-[80%] break-words">
         {content}
       </Card>
     </div>
@@ -53,11 +46,11 @@ interface FragmentCardProps {
 
 /**
  * FragmentCard component displays a clickable card for code fragments.
- * 
+ *
  * Renders a button-style card that shows fragment information and allows users
  * to click to view the associated code preview. The card's appearance changes
  * based on whether it's currently the active fragment being displayed.
- * 
+ *
  * @param fragment - The fragment object containing title and other metadata
  * @param isActiveFragment - Boolean indicating if this fragment is currently active/selected
  * @param onFragmentClick - Callback function triggered when the fragment card is clicked
@@ -77,14 +70,16 @@ const FragmentCard = ({
       )}
       onClick={() => onFragmentClick(fragment)}
     >
-    <Code2Icon className="size-4 mt-0.5" />
-    <div className="flex flex-col flex-1">
-        <span className="text-sm font-medium line-clamp-1">{fragment.title}</span>
+      <Code2Icon className="size-4 mt-0.5" />
+      <div className="flex flex-col flex-1">
+        <span className="text-sm font-medium line-clamp-1">
+          {fragment.title}
+        </span>
         <span className="text-sm">Preview</span>
-    </div>
-    <div className="flex items-center justify-center mt-0.5">
+      </div>
+      <div className="flex items-center justify-center mt-0.5">
         <ChevronRightIcon className="size-4" />
-    </div>
+      </div>
     </button>
   );
 };
@@ -100,12 +95,12 @@ interface AssistantMessageProps {
 
 /**
  * AssistantMessage component displays messages from the AI assistant.
- * 
+ *
  * Renders assistant messages with a distinctive layout including the Joy logo,
  * timestamp, message content, and optionally a fragment card for code previews.
  * The component handles different message types including error states with
  * appropriate styling.
- * 
+ *
  * @param content - The text content of the assistant's message
  * @param fragment - Optional fragment object containing generated code
  * @param createdAt - Timestamp when the message was created
@@ -158,11 +153,11 @@ const AssistantMessage = ({
 
 /**
  * MessageCard component renders different types of chat messages.
- * 
+ *
  * This is the main component that determines whether to render a user message
  * or an assistant message based on the message role. It serves as a router
  * component that delegates to the appropriate specialized message component.
- * 
+ *
  * @param content - The text content of the message
  * @param role - The role of the message sender (USER or ASSISTANT)
  * @param fragment - Optional fragment object for code previews

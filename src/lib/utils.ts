@@ -125,6 +125,12 @@ export function convertFilesToTreeItems(files: { [path:string]: string},) : Tree
   // If result is a single TreeItem, wrap it in an array
   return Array.isArray(result) ? result : [result];  
 }; 
+
+
+
+
+
+
 /*
   Plain English Documentation for convertFilesToTreeItems:
 

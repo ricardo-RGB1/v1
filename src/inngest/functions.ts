@@ -14,6 +14,7 @@ import { getSandbox, lastAgentResponse, extractTextContent } from "./utils";
 import { z } from "zod";
 import { PROMPT, RESPONSE_PROMPT, FRAGMENT_TITLE_PROMPT } from "@/prompt";
 import { prisma } from "@/lib/prisma";
+import { SANDBOX_TIMEOUT } from "./types";
 
 interface AgentState {
   summary: string;
@@ -29,6 +30,7 @@ export const codeAgentFunction = inngest.createFunction(
     // create a new sandbox and return the id
     const sandboxId = await step.run("get-sandbox-id", async () => {
       const sandbox = await Sandbox.create("v1-nextjs-test-3");
+      await sandbox.setTimeout(SANDBOX_TIMEOUT); // 30 minutes
       return sandbox.sandboxId;
     });
 
@@ -61,6 +63,7 @@ export const codeAgentFunction = inngest.createFunction(
           orderBy: {
             createdAt: "asc",
           },
+          take: 5, 
         });
 
         // Transform each database message into the agent's expected Message format
