@@ -6,11 +6,13 @@ import {
   createTool,
   createNetwork,
   type Tool,
+  type Message,
+  createState,
 } from "@inngest/agent-kit";
 import { inngest } from "./client";
-import { getSandbox, lastAgentResponse } from "./utils";
+import { getSandbox, lastAgentResponse, extractTextContent } from "./utils";
 import { z } from "zod";
-import { PROMPT } from "@/prompt";
+import { PROMPT, RESPONSE_PROMPT, FRAGMENT_TITLE_PROMPT } from "@/prompt";
 import { prisma } from "@/lib/prisma";
 
 interface AgentState {
@@ -31,11 +33,89 @@ export const codeAgentFunction = inngest.createFunction(
     });
 
     /**
-     * Code Agent Configuration:
+     * Retrieve and format previous messages from the project's conversation history
      *
-     * Creates an AI agent (an Agent instance) that operates within a sandboxed Next.js environment.
-     * The agent is configured with tools for terminal operations, file management,
-     * and has a lifecycle hook to capture task summaries from responses.
+     * This step fetches all messages associated with the current project from the database
+     * and transforms them into the format expected by the agent's message system.
+     *
+     * Process:
+     * 1. Query the database for all messages in this project, ordered chronologically
+     * 2. Transform each database message into the agent's Message format
+     * 3. Map database roles ("ASSISTANT"/"USER") to agent roles ("assistant"/"user")
+     * 4. Return the formatted message array for agent context
+     *
+     * This ensures the agent has full conversation context when processing new requests,
+     * allowing it to understand previous interactions and maintain continuity.
+     */
+    const previousMessages = await step.run(
+      "get-previous-messages",
+      async () => {
+        // Initialize an empty array to store the formatted messages
+        const formattedMessages: Message[] = [];
+
+        // Retrieve all messages for this project from the database, ordered by creation time
+        const messages = await prisma.message.findMany({
+          where: {
+            projectId: event.data.projectId,
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        });
+
+        // Transform each database message into the agent's expected Message format
+        for (const message of messages) {
+          // Convert database message to agent message format with role mapping
+          formattedMessages.push({
+            type: "text",
+            role: message.role === "ASSISTANT" ? "assistant" : "user",
+            content: message.content,
+          });
+        }
+
+        return formattedMessages;
+      }
+    );
+
+    /**
+     * Initialize the agent state with empty summary and files, plus conversation history
+     *
+     * The state object maintains:
+     * - summary: A string that will be populated with task completion summaries
+     * - files: An object mapping file paths to their content for tracking code changes
+     * - messages: The conversation history from previous interactions in this project
+     */
+    const state = createState<AgentState>(
+      {
+        summary: "",
+        files: {},
+      },
+      {
+        messages: previousMessages,
+      }
+    );
+
+    /**
+     * Create the main code generation agent
+     *
+     * This agent is responsible for interpreting user prompts and generating complete Next.js applications.
+     * It operates within a sandboxed environment and has access to terminal commands, file operations,
+     * and the ability to read existing code to maintain context across iterations.
+     *
+     * Agent Configuration:
+     * - name: Unique identifier for this agent instance
+     * - description: Brief explanation of the agent's role and capabilities
+     * - system: The comprehensive prompt that defines the agent's behavior and constraints
+     * - model: OpenAI GPT-4.1 with low temperature for deterministic, consistent output
+     *
+     * Available Tools:
+     * 1. terminal: Execute shell commands in the sandbox environment
+     * 2. createOrUpdateFiles: Write or modify files in the project structure
+     * 3. readFiles: Read existing files to understand current codebase state
+     *
+     * Lifecycle Hooks:
+     * - onResponse: Captures task completion summaries from agent responses
+     *   When the agent includes a <task_summary> tag, it indicates the task is complete
      */
     const codeAgent = createAgent<AgentState>({
       name: "code-agent",
@@ -49,6 +129,18 @@ export const codeAgentFunction = inngest.createFunction(
         },
       }),
       tools: [
+        /**
+         * Terminal Tool
+         *
+         * Allows the agent to execute shell commands within the sandbox environment.
+         * Commonly used for installing npm packages, running build commands, or other
+         * development tasks that require command-line access.
+         *
+         * Parameters:
+         * - command: The shell command to execute
+         *
+         * Returns: The stdout output of the command, or error details if the command fails
+         */
         createTool({
           name: "terminal",
           description: "Use the terminal to run commands",
@@ -82,6 +174,20 @@ export const codeAgentFunction = inngest.createFunction(
             });
           },
         }),
+        /**
+         * Create or Update Files Tool
+         *
+         * Enables the agent to create new files or modify existing ones in the sandbox.
+         * This is the primary mechanism for generating and updating the codebase.
+         * The tool also maintains a state record of all files for tracking changes.
+         *
+         * Parameters:
+         * - files: Array of file objects, each containing a path and content
+         *
+         * Side Effects:
+         * - Writes files to the sandbox filesystem
+         * - Updates the network state to track file changes
+         */
         createTool({
           name: "createOrUpdateFiles",
           description: "Create or update files in the sandbox",
@@ -120,6 +226,19 @@ export const codeAgentFunction = inngest.createFunction(
             }
           },
         }),
+        /**
+         * Read Files Tool
+         *
+         * Allows the agent to read existing files from the sandbox filesystem.
+         * This is essential for understanding the current codebase structure,
+         * reading configuration files, or examining existing components before
+         * making modifications.
+         *
+         * Parameters:
+         * - files: Array of file paths to read
+         *
+         * Returns: JSON string containing an array of objects with path and content
+         */
         createTool({
           name: "readFiles",
           description: "Read files from the sandbox",
@@ -144,7 +263,14 @@ export const codeAgentFunction = inngest.createFunction(
         }),
       ], // end of tools
 
-      // lifecycle hook to capture task summaries from responses
+      /**
+       * Lifecycle Hooks
+       *
+       * The onResponse hook monitors agent responses to detect task completion.
+       * When the agent includes a <task_summary> tag in its response, this indicates
+       * that the current task has been completed successfully. The summary is then
+       * stored in the network state to signal completion to the router.
+       */
       lifecycle: {
         onResponse: async ({ result, network }) => {
           const lastResponse = lastAgentResponse(result);
@@ -160,26 +286,94 @@ export const codeAgentFunction = inngest.createFunction(
     }); // end of codeAgent
 
     /**
-     * Network orchestrates agent execution with iterative processing.
-     * Continues running the agent until a task summary is generated,
-     * indicating task completion. Max 10 iterations for safety.
+     * Create the agent network that orchestrates the code generation process
+     *
+     * The network manages the execution flow of AI agents and maintains shared state
+     * throughout the code generation lifecycle. It coordinates between different agents
+     * and ensures proper task completion within iteration limits.
+     *
+     * Configuration:
+     * - name: Unique identifier for this network instance
+     * - agents: Array of available agents (currently just the codeAgent)
+     * - maxIter: Maximum number of iterations before terminating (prevents infinite loops)
+     * - defaultState: Initial state containing sandbox ID and empty data structures
+     * - router: Logic to determine which agent should handle the next iteration
+     *
+     * Router Logic:
+     * - If a task summary exists in the network state, the task is considered complete
+     * - Otherwise, routes to the codeAgent to continue processing
+     * - This ensures the network stops when the agent provides a completion summary
      */
     const network = createNetwork<AgentState>({
       name: "code-agent-network",
       agents: [codeAgent],
       maxIter: 10,
+      defaultState: state,
       router: async ({ network }) => {
         const summary = network.state.data.summary;
         if (summary) {
-          // if the summary is found, stop the agent
           return;
         }
-        return codeAgent; // run the agent again
+        return codeAgent;
       },
     });
 
-    const result = await network.run(event.data.value);
+    /**
+     * Execute the agent network with the user's input
+     *
+     * This runs the code generation network with the user's prompt as input.
+     * The network will iterate through agents until a task summary is generated
+     * or the maximum iteration limit is reached.
+     *
+     * Parameters:
+     * - event.data.value: The user's input prompt/request
+     * - state: The initialized agent state containing conversation history
+     *
+     * Returns: Network execution result containing final state and agent responses
+     */
+    const result = await network.run(event.data.value, { state: state });
 
+    /**
+     * Fragment title generator agent
+     *
+     * Generates concise, descriptive titles (max 3 words) for code fragments
+     * based on task summaries. Used to create user-friendly labels for the UI.
+     */
+    const fragmentTitleGenerator = createAgent({
+      name: "fragment-title-generator",
+      description:
+        "An assistant that generates a short, descriptive title for a code fragment based on its <task_summary>.",
+      system: FRAGMENT_TITLE_PROMPT,
+      model: openai({
+        model: "gpt-4.1",
+      }),
+    });
+
+    /**
+     * Response generator agent
+     *
+     * Generates a short, user-friendly message explaining what was just built,
+     * based on the <task_summary> provided by the other agents.
+     */
+    const responseGenerator = createAgent({
+      name: "response-generator",
+      description:
+        "An assistant that generates a short, user-friendly message explaining what was just built, based on the <task_summary> provided by the other agents.",
+      system: RESPONSE_PROMPT,
+      model: openai({
+        model: "gpt-4.1",
+      }),
+    });
+
+    /**
+     * Generate fragment title and user response from task summary
+     */
+    const { output: fragmentTitleOutput } = await fragmentTitleGenerator.run(
+      result.state.data.summary
+    );
+    const { output: responseOutput } = await responseGenerator.run(
+      result.state.data.summary
+    );
 
     // Handle cases where the agent didn't complete successfully
     const isError =
@@ -212,12 +406,12 @@ export const codeAgentFunction = inngest.createFunction(
      *
      * This preserves the complete state of the agent's work for retrieval
      * and display in the frontend interface.
-    */
+     */
     await step.run("save-result", async () => {
       if (isError) {
         return await prisma.message.create({
           data: {
-            projectId: event.data.projectId, 
+            projectId: event.data.projectId,
             content:
               "The agent was unable to complete the task within the maximum iterations.",
             role: "ASSISTANT",
@@ -228,13 +422,16 @@ export const codeAgentFunction = inngest.createFunction(
       return await prisma.message.create({
         data: {
           projectId: event.data.projectId,
-          content: result.state.data.summary,
+          content: extractTextContent(
+            responseOutput,
+            "The agent was unable to generate a response. Please try again."
+          ),
           role: "ASSISTANT",
           type: "RESULT",
           fragment: {
             create: {
               sandboxUrl: sandboxUrl,
-              title: "Fragment",
+              title: extractTextContent(fragmentTitleOutput, "Fragment"),
               files: result.state.data.files,
             },
           },

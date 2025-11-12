@@ -1,5 +1,5 @@
 import { Sandbox } from "@e2b/code-interpreter";
-import { AgentResult, TextMessage } from "@inngest/agent-kit";
+import { AgentResult, Message, TextMessage } from "@inngest/agent-kit";
 /**
  * Connects to an existing E2B sandbox instance
  *
@@ -24,8 +24,6 @@ export async function getSandbox(sandboxId: string) {
   const sandbox = await Sandbox.connect(sandboxId);
   return sandbox;
 }
-
-
 
 /**
  * Extracts the last assistant response from an agent result
@@ -66,4 +64,35 @@ export function lastAgentResponse(result: AgentResult) {
 
   // Handle array content by extracting and joining text segments
   return message.content.map((c) => c.text).join("");
+}
+
+/**
+ * Extracts text content from agent output messages
+ *
+ * This utility function processes the output from agent runs and extracts
+ * the text content, handling both simple string content and array-based
+ * content structures. If the output is not a text message, it returns
+ * the provided fallback string.
+ *
+ * @param output - The output array from an agent run containing messages
+ * @param fallback - The fallback string to return if extraction fails
+ * @returns The extracted text content or the fallback string
+ *
+ * @example
+ * ```ts
+ * const { output } = await agent.run("Generate title");
+ * const title = extractTextContent(output, "Default Title");
+ * console.log(title); // "Generated Title" or "Default Title" if failed
+ * ```
+ */
+export function extractTextContent(output: Message[], fallback: string) {
+  if (output[0].type !== "text") {
+    return fallback;
+  }
+
+  if (Array.isArray(output[0].content)) {
+    return output[0].content.map((txt) => txt).join("");
+  } else {
+    return output[0].content;
+  }
 }
