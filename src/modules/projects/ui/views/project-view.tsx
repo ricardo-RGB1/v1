@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { UserControl } from "@/components/user-control";
 import { FileExplorer } from "@/components/file-explorer";
 import { useAuth } from "@clerk/nextjs";
+import { ErrorBoundary } from "react-error-boundary";
 
 interface ProjectViewProps {
   projectId: string;
@@ -61,18 +62,22 @@ export const ProjectView = ({ projectId }: ProjectViewProps) => {
           className="flex flex-col min-h-0"
         >
           {/* Project header with navigation and theme controls */}
-          <Suspense fallback={<p>Loading project...</p>}>
-            <ProjectHeader projectId={projectId} />
-          </Suspense>
+          <ErrorBoundary fallback={<div>Error loading project</div>}>
+            <Suspense fallback={<p>Loading project...</p>}>
+              <ProjectHeader projectId={projectId} />
+            </Suspense>
+          </ErrorBoundary>
           
           {/* Messages container with chat interface and fragment selection */}
-          <Suspense fallback={<p>Loading messages...</p>}>
-            <MessagesContainer
-              projectId={projectId}
-              activeFragment={activeFragment}
-              setActiveFragment={setActiveFragment}
-            />
-          </Suspense>
+          <ErrorBoundary fallback={<div>Error loading messages</div>}>
+            <Suspense fallback={<p>Loading messages...</p>}>
+              <MessagesContainer
+                projectId={projectId}
+                activeFragment={activeFragment}
+                setActiveFragment={setActiveFragment}
+              />
+            </Suspense>
+          </ErrorBoundary>
         </ResizablePanel>
         
         <ResizableHandle withHandle />

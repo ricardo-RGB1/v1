@@ -27,21 +27,12 @@ const formSchema = z.object({
 
 type FormSchema = z.infer<typeof formSchema>;
 
-
-
-
-
-
-
-
-
-
 /**
  * MessageForm Component
- * 
+ *
  * A form component for creating new messages in a project. Handles user input validation,
  * credit consumption tracking, and message submission with real-time feedback.
- * 
+ *
  * Features:
  * - Auto-resizing textarea for message input
  * - Form validation with Zod schema (1-10000 characters)
@@ -49,10 +40,10 @@ type FormSchema = z.infer<typeof formSchema>;
  * - Real-time submission state feedback
  * - Automatic redirect to pricing on credit exhaustion
  * - Query invalidation for real-time UI updates
- * 
+ *
  * Props:
  * - projectId: string - The ID of the project to create messages for
- * 
+ *
  * Dependencies:
  * - Uses tRPC for API calls (messages.create, usage.status)
  * - Integrates with react-hook-form for form management
@@ -74,8 +65,6 @@ export const MessageForm = ({ projectId }: Props) => {
   // ********** Get usage status **********
   const { data: usage } = useQuery(trpc.usage.status.queryOptions());
 
-
-
   // ********** Create a new message **********
   const createMessage = useMutation(
     trpc.messages.create.mutationOptions({
@@ -87,12 +76,12 @@ export const MessageForm = ({ projectId }: Props) => {
         );
         queryClient.invalidateQueries(trpc.usage.status.queryOptions());
       },
-      
+
       onError: (error) => {
         toast.error(error.message);
 
         if (error.data?.code === "TOO_MANY_REQUESTS") {
-          router.push("/pricing"); 
+          router.push("/pricing");
         }
       },
     })
@@ -142,7 +131,7 @@ export const MessageForm = ({ projectId }: Props) => {
               className="pt-4 resize-none border-none w-full outline-none bg-transparent"
               placeholder="What would you like to build?"
               onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   form.handleSubmit(onSubmit)(e);
                 }
@@ -153,9 +142,13 @@ export const MessageForm = ({ projectId }: Props) => {
         <div className="flex gap-x-2 items-end justify-between pt-2">
           <div className="text-[10px] text-muted-foreground font-mono">
             <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-              <span>&#8984;</span>Enter
+              Enter
             </kbd>
-            &nbsp;to submit
+            &nbsp;to submit,&nbsp;
+            <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              Shift+Enter
+            </kbd>
+            &nbsp;for new line
           </div>
           <Button
             className={cn(
@@ -174,4 +167,4 @@ export const MessageForm = ({ projectId }: Props) => {
       </form>
     </Form>
   );
-};
+};  
